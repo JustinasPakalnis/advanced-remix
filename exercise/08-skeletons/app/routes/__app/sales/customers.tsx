@@ -1,10 +1,15 @@
-import { NavLink, Outlet, useLoaderData } from "@remix-run/react";
+import {
+  NavLink,
+  Outlet,
+  useLoaderData,
+  useTransition,
+} from "@remix-run/react";
 import type { LoaderArgs } from "@remix-run/node";
 import { json } from "@remix-run/node";
 import { FilePlusIcon } from "~/components";
 import { requireUser } from "~/session.server";
 import { getCustomerListItems } from "~/models/customer.server";
-
+type LoadingCustomer = Awaited<ReturnType<typeof getCustomerListItems>>[number];
 export async function loader({ request }: LoaderArgs) {
   await requireUser(request);
   return json({
@@ -14,7 +19,15 @@ export async function loader({ request }: LoaderArgs) {
 
 export default function Customers() {
   const { customers } = useLoaderData<typeof loader>();
+  const transition = useTransition();
 
+  let loadingCustomer: LoadingCustomer | undefined;
+
+  if (transition.location?.state) {
+    loadingCustomer = (transition.location?.state as any)?.customer;
+  }
+
+  const showSkeleton = loadingCustomer;
   // 🐨 get the transition from useTransition
   // 💰 use transition.location?.state to get the customer we're transitioning to
 
@@ -43,7 +56,7 @@ export default function Customers() {
               key={customer.id}
               to={customer.id}
               // 🐨 add state to set the customer for the transition
-              // 💰 state={{ customer }}
+              state={{ customer }}
               prefetch="intent"
               className={({ isActive }) =>
                 "block border-b border-gray-50 py-3 px-4 hover:bg-gray-50" +
@@ -67,7 +80,14 @@ export default function Customers() {
           <CustomerSkeleton /> (defined below) instead of
           the <Outlet />
         */}
-        <Outlet />
+        {showSkeleton ? (
+          <CustomerSkeleton
+            name={loadingCustomer.name}
+            email={loadingCustomer.email}
+          />
+        ) : (
+          <Outlet />
+        )}
         <small className="p-2 text-center">
           Note: this is arbitrarily slow to demonstrate pending UI.
         </small>

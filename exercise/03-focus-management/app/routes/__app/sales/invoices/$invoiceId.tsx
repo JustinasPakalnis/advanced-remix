@@ -192,6 +192,8 @@ function Deposits() {
     | undefined;
 
   useEffect(() => {
+    console.log(document.activeElement);
+
     if (!formRef.current) return;
     if (newDepositFetcher.state !== "idle") return;
 
@@ -202,8 +204,16 @@ function Deposits() {
     // 🐨 Focus on the amount field
     // 💯 In what situation would we want to *not* change focus and *not* reset the form at this point?
 
-    formRef.current.reset();
-  }, [newDepositFetcher.state]);
+    if (errors?.amount) {
+      formRef.current.elements.amount?.focus();
+      formRef.current.elements.amount?.focus();
+    } else if (errors?.depositDate) {
+      formRef.current.elements.depositDate?.focus();
+    } else if (document.activeElement === formRef.current.elements.intent) {
+      formRef.current.elements.amount?.focus();
+      formRef.current.reset();
+    }
+  }, [newDepositFetcher.state, errors]);
 
   return (
     <div>
